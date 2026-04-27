@@ -36,6 +36,7 @@ function getObjectionIntel(objection) {
 // ─── Main component ───────────────────────────────────────────
 export default function Dashboard() {
   const [tab, setTab]           = useState('james')
+  const [period, setPeriod]     = useState('all')
   const [stats, setStats]       = useState(null)
   const [calls, setCalls]       = useState([])
   const [repData, setRepData]   = useState(null)
@@ -44,15 +45,19 @@ export default function Dashboard() {
   const [lastUpdated, setLastUpdated] = useState(null)
   const [playingId, setPlayingId]     = useState(null)
 
-  const loadJames = useCallback(async () => {
+  const loadJames = useCallback(async (p) => {
+    const activePeriod = p || period
     try {
-      const [sRes, cRes] = await Promise.all([fetch('/api/stats'), fetch('/api/calls?limit=50')])
+      const [sRes, cRes] = await Promise.all([
+        fetch(`/api/stats?period=${activePeriod}`),
+        fetch(`/api/calls?limit=50&period=${activePeriod}`)
+      ])
       setStats(await sRes.json())
       setCalls(await cRes.json())
       setLastUpdated(new Date())
     } catch (e) { console.error(e) }
     finally { setLoading(false) }
-  }, [])
+  }, [period])
 
   const loadReps = useCallback(async () => {
     if (repData) return
@@ -64,7 +69,7 @@ export default function Dashboard() {
     finally { setRepLoading(false) }
   }, [repData])
 
-  useEffect(() => { loadJames(); const t = setInterval(loadJames, 60000); return () => clearInterval(t) }, [loadJames])
+  useEffect(() => { loadJames(period); const t = setInterval(() => loadJames(period), 60000); return () => clearInterval(t) }, [period])
   useEffect(() => { if (tab === 'reps') loadReps() }, [tab, loadReps])
 
   const pct    = (n, d) => d > 0 ? (n / d * 100).toFixed(1) + '%' : '0%'
@@ -106,9 +111,17 @@ export default function Dashboard() {
           <button className={`tab-btn ${tab === 'reps' ? 'active' : ''}`} onClick={() => setTab('reps')}>👥 Sales Reps</button>
         </div>
         <div className="header-right">
+          {tab === 'james' && (
+            <select className="period-select" value={period} onChange={e => { setPeriod(e.target.value); setLoading(true) }}>
+              <option value="1d">Today</option>
+              <option value="7d">Last 7 Days</option>
+              <option value="1m">Last 30 Days</option>
+              <option value="all">All Time</option>
+            </select>
+          )}
           <span className="live-badge">● LIVE</span>
           <span className="last-updated">{lastUpdated ? `Updated ${lastUpdated.toLocaleTimeString()}` : 'Loading…'}</span>
-          <button className="refresh-btn" onClick={tab === 'james' ? loadJames : () => { setRepData(null); loadReps() }}>↻ Refresh</button>
+          <button className="refresh-btn" onClick={tab === 'james' ? () => loadJames(period) : () => { setRepData(null); loadReps() }}>↻ Refresh</button>
         </div>
       </div>
 
@@ -359,6 +372,8 @@ export default function Dashboard() {
         .last-updated { font-size:12px; color:#888; white-space:nowrap; }
         .refresh-btn { background:#2a2a4a; border:1px solid #3a3a6a; color:#ccc; padding:6px 14px; border-radius:6px; cursor:pointer; font-size:13px; white-space:nowrap; }
         .refresh-btn:hover { background:#3a3a6a; color:#fff; }
+        .period-select { background:#2a2a4a; border:1px solid #3a3a6a; color:#fff; padding:6px 12px; border-radius:6px; font-size:13px; cursor:pointer; outline:none; }
+        .period-select:hover { border-color:#f4a300; }
 
         .container { padding:24px 32px; max-width:1600px; margin:0 auto; }
 

@@ -85,7 +85,7 @@ export default async function handler(req, res) {
   const contacted = rows.filter(r => contactedReasons.has((r.ended_reason || '').toLowerCase())).length
 
   res.status(200).json({
-    total, todayCount, weekCount, transfers,
+    total, todayCount, weekCount, transfers, contacted,
     transferRate: total > 0 ? transfers / total : 0,
     contactRate:  total > 0 ? (total - contacted) / total : 0,
     dnc, notInterested, noAnswer, voicemail, wrongNumber, callback, busy, other,

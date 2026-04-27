@@ -124,7 +124,7 @@ export default function Dashboard() {
                 { label: 'Total Calls',   value: stats.total,                         sub: `Today: ${stats.todayCount} | This week: ${stats.weekCount}`, color: 'green' },
                 { label: 'Transfers',     value: stats.transfers,                     sub: 'Leads handed to reps',   color: 'blue' },
                 { label: 'Transfer Rate', value: pct(stats.transfers, stats.total),   sub: 'Of all calls dialed',    color: 'orange' },
-                { label: 'Contact Rate',  value: pct(stats.total - stats.noAnswer - stats.voicemail, stats.total), sub: 'Humans answered', color: 'teal' },
+                { label: 'No Answer Rate', value: (stats.contactRate * 100).toFixed(1) + '%', sub: 'Did not pick up', color: 'teal' },
                 { label: 'DNC',           value: stats.dnc,                           sub: 'Removed permanently',    color: 'red' },
                 { label: 'Avg Duration',  value: fmtSec(stats.avgDuration),           sub: 'Per call',               color: 'purple' },
               ].map(k => (

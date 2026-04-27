@@ -82,7 +82,7 @@ export default async function handler(req, res) {
   res.status(200).json({
     total, todayCount, weekCount, transfers,
     transferRate: total > 0 ? transfers / total : 0,
-    contactRate:  total > 0 ? contacted / total : 0,
+    contactRate:  total > 0 ? (total - contacted) / total : 0,
     dnc, notInterested, noAnswer, voicemail, wrongNumber, callback, busy, other,
     good, neutral, bad,
     avgDuration: durationCount > 0 ? Math.round(totalDuration / durationCount) : 0,

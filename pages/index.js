@@ -137,7 +137,6 @@ export default function Dashboard() {
                 { label: 'Total Calls',   value: stats.total,                         sub: `Today: ${stats.todayCount} | This week: ${stats.weekCount}`, color: 'green' },
                 { label: 'Transfers',     value: stats.transfers,                     sub: 'Leads handed to reps',   color: 'blue' },
                 { label: 'Transfer Rate', value: pct(stats.transfers, stats.total),   sub: 'Of all calls dialed',    color: 'orange' },
-                { label: 'No Answer Rate', value: (stats.contactRate * 100).toFixed(1) + '%', sub: 'Did not pick up', color: 'teal' },
                 { label: 'DNC',           value: stats.dnc,                           sub: 'Removed permanently',    color: 'red' },
                 { label: 'Avg Duration',  value: fmtSec(stats.avgDuration),           sub: 'Per call',               color: 'purple' },
               ].map(k => (
@@ -378,7 +377,7 @@ export default function Dashboard() {
         .container { padding:24px 32px; max-width:1600px; margin:0 auto; }
 
         /* KPI */
-        .kpi-grid { display:grid; grid-template-columns:repeat(6,1fr); gap:16px; margin-bottom:24px; }
+        .kpi-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:16px; margin-bottom:24px; }
         .kpi-card { background:#1a1a2e; border:1px solid #2a2a4a; border-radius:12px; padding:20px; position:relative; overflow:hidden; }
         .kpi-card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; }
         .kpi-green::before{background:#28a745} .kpi-blue::before{background:#0d6efd} .kpi-orange::before{background:#f4a300} .kpi-teal::before{background:#20c997} .kpi-red::before{background:#dc3545} .kpi-purple::before{background:#6f42c1}

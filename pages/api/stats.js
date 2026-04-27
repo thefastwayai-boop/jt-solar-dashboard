@@ -3,7 +3,7 @@ import { supabaseAdmin } from '../../lib/supabase'
 export default async function handler(req, res) {
   const { data: rows, error } = await supabaseAdmin
     .from('calls')
-    .select('created_at, outcome, quality, customer_sentiment, transfer_completed, duration_seconds, ended_reason, objections')
+    .select('created_at, outcome, quality, customer_sentiment, transfer_completed, duration_seconds, ended_reason, answered_by, objections')
     .order('created_at', { ascending: false })
 
   if (error) return res.status(500).json({ error: error.message })
@@ -42,6 +42,7 @@ export default async function handler(req, res) {
     else if (outcome === 'busy')           busy++
     else other++
 
+
     if (quality === 'good')         good++
     else if (quality === 'bad')     bad++
     else if (quality === 'neutral') neutral++
@@ -70,7 +71,7 @@ export default async function handler(req, res) {
     .sort((a, b) => b[1] - a[1]).slice(0, 5)
     .map(([name, count]) => ({ name, count }))
 
-  const contacted = total - noAnswer - voicemail
+  const contacted = rows.filter(r => r.answered_by === 'human').length
   res.status(200).json({
     total, todayCount, weekCount, transfers,
     transferRate: total > 0 ? transfers / total : 0,

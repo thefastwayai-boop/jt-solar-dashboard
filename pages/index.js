@@ -44,6 +44,7 @@ export default function Dashboard() {
   const [repLoading, setRepLoading] = useState(false)
   const [lastUpdated, setLastUpdated] = useState(null)
   const [playingId, setPlayingId]     = useState(null)
+  const [callFilter, setCallFilter]   = useState(null)
 
   const loadJames = useCallback(async (p) => {
     const activePeriod = p || period
@@ -133,17 +134,21 @@ export default function Dashboard() {
 
             <div className="kpi-grid">
               {[
-                { label: 'Total Calls',    value: stats.total,                       sub: `Today: ${stats.todayCount} | This week: ${stats.weekCount}`, color: 'green' },
-                { label: 'Picked Up',     value: stats.contacted,                    sub: 'People who answered',    color: 'teal' },
-                { label: 'Transfers',     value: stats.transfers,                    sub: 'Leads handed to reps',   color: 'blue' },
-                { label: 'Transfer Rate', value: pct(stats.transfers, stats.total),  sub: 'Of all calls dialed',    color: 'orange' },
-                { label: 'DNC',           value: stats.dnc,                          sub: 'Removed permanently',    color: 'red' },
-                { label: 'Avg Duration',  value: fmtSec(stats.avgDuration),          sub: 'Per call',               color: 'purple' },
+                { label: 'Total Calls',    value: stats.total,                       sub: `Today: ${stats.todayCount} | This week: ${stats.weekCount}`, color: 'green',   filter: null },
+                { label: 'Picked Up',      value: stats.contacted,                   sub: 'Click to view',          color: 'teal',    filter: 'picked_up' },
+                { label: 'Transfers',      value: stats.transfers,                   sub: 'Click to view',          color: 'blue',    filter: 'transferred' },
+                { label: 'Transfer Rate',  value: pct(stats.transfers, stats.total), sub: 'Of all calls dialed',    color: 'orange',  filter: null },
+                { label: 'DNC',            value: stats.dnc,                         sub: 'Click to view',          color: 'red',     filter: 'dnc' },
+                { label: 'Avg Duration',   value: fmtSec(stats.avgDuration),         sub: 'Per call',               color: 'purple',  filter: null },
               ].map(k => (
-                <div key={k.label} className={`kpi-card kpi-${k.color}`}>
+                <div
+                  key={k.label}
+                  className={`kpi-card kpi-${k.color}${k.filter ? ' kpi-clickable' : ''}${callFilter === k.filter && k.filter ? ' kpi-active' : ''}`}
+                  onClick={() => k.filter ? setCallFilter(callFilter === k.filter ? null : k.filter) : null}
+                >
                   <div className="kpi-label">{k.label}</div>
                   <div className="kpi-value">{k.value}</div>
-                  <div className="kpi-sub">{k.sub}</div>
+                  <div className="kpi-sub">{callFilter === k.filter && k.filter ? '▲ Showing below' : k.sub}</div>
                 </div>
               ))}
             </div>
@@ -215,13 +220,27 @@ export default function Dashboard() {
             )}
 
             <div className="card">
-              <div className="section-title">Recent Calls</div>
-              {calls.length === 0 ? <div className="empty">No calls yet.</div> : (
+              <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:14}}>
+                <div className="section-title" style={{marginBottom:0}}>
+                  {callFilter === 'picked_up'   ? '📞 People Who Picked Up' :
+                   callFilter === 'transferred'  ? '✅ Transferred Calls' :
+                   callFilter === 'dnc'          ? '🚫 DNC Calls' :
+                   'Recent Calls'}
+                </div>
+                {callFilter && <button className="clear-filter-btn" onClick={() => setCallFilter(null)}>✕ Clear filter</button>}
+              </div>
+              {(() => {
+                const pickedUpReasons = new Set(['customer-ended-call','assistant-forwarded-call','assistant-ended-call'])
+                const filtered = callFilter === 'picked_up'  ? calls.filter(c => pickedUpReasons.has(c.ended_reason)) :
+                                 callFilter === 'transferred' ? calls.filter(c => c.outcome === 'transferred') :
+                                 callFilter === 'dnc'         ? calls.filter(c => c.outcome === 'dnc') :
+                                 calls
+                return filtered.length === 0 ? <div className="empty">No calls match this filter.</div> : (
                 <div className="table-wrap">
                   <table>
                     <thead><tr><th>Date / Time</th><th>Name</th><th>Phone</th><th>Outcome</th><th>Quality</th><th>Duration</th><th>Objections</th><th>Summary</th><th>Recording</th></tr></thead>
                     <tbody>
-                      {calls.map(c => (
+                      {filtered.map(c => (
                         <>
                           <tr key={c.id}>
                             <td>{new Date(c.created_at).toLocaleString()}</td>
@@ -244,7 +263,7 @@ export default function Dashboard() {
                     </tbody>
                   </table>
                 </div>
-              )}
+              )})()}
             </div>
           </>
         )}
@@ -381,6 +400,11 @@ export default function Dashboard() {
         .kpi-card { background:#1a1a2e; border:1px solid #2a2a4a; border-radius:12px; padding:20px; position:relative; overflow:hidden; }
         .kpi-card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; }
         .kpi-green::before{background:#28a745} .kpi-blue::before{background:#0d6efd} .kpi-orange::before{background:#f4a300} .kpi-teal::before{background:#20c997} .kpi-red::before{background:#dc3545} .kpi-purple::before{background:#6f42c1}
+        .kpi-clickable { cursor:pointer; transition:transform .15s, border-color .15s; }
+        .kpi-clickable:hover { transform:translateY(-2px); border-color:#f4a300; }
+        .kpi-active { border-color:#f4a300 !important; box-shadow:0 0 0 2px #f4a30033; }
+        .clear-filter-btn { background:#2a2a4a; border:1px solid #3a3a6a; color:#f4a300; padding:5px 12px; border-radius:6px; cursor:pointer; font-size:12px; font-weight:700; }
+        .clear-filter-btn:hover { background:#f4a300; color:#000; border-color:#f4a300; }
         .kpi-label { font-size:11px; font-weight:600; color:#888; letter-spacing:.8px; text-transform:uppercase; margin-bottom:10px; }
         .kpi-value { font-size:34px; font-weight:800; color:#fff; line-height:1; }
         .kpi-sub   { font-size:12px; color:#666; margin-top:6px; }

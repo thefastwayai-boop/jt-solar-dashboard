@@ -82,10 +82,9 @@ export default function Dashboard() {
     return <span className={`badge badge-${cls}`}>{label}</span>
   }
   const qualityBadge = q => {
-    if (q === 'good')    return <span className="badge badge-green">✓ Good</span>
-    if (q === 'bad')     return <span className="badge badge-red">✗ Bad</span>
-    if (q === 'neutral') return <span className="badge badge-orange">~ Neutral</span>
-    return <span className="badge badge-gray">—</span>
+    if (q === 'good') return <span className="badge badge-green">✓ Good</span>
+    if (q === 'bad')  return <span className="badge badge-red">✗ Bad</span>
+    return null
   }
 
   const objectionSummary = (() => {
@@ -228,7 +227,7 @@ export default function Dashboard() {
                             <td style={{color:'#fff',fontWeight:600}}>{c.contact_name||'Unknown'}</td>
                             <td>{c.phone||'—'}</td>
                             <td>{outcomeBadge(c.outcome)}</td>
-                            <td>{['customer-ended-call','assistant-forwarded-call','assistant-ended-call'].includes(c.ended_reason) ? qualityBadge(c.quality) : <span className="badge badge-gray">No Answer</span>}</td>
+                            <td>{['customer-ended-call','assistant-forwarded-call','assistant-ended-call'].includes(c.ended_reason) ? qualityBadge(c.quality) : null}</td>
                             <td>{c.duration_seconds?fmtSec(c.duration_seconds):'—'}</td>
                             <td style={{fontSize:12,color:'#999'}}>{c.objections||'—'}</td>
                             <td><div className="summary-text" title={c.summary}>{c.summary||'—'}</div></td>

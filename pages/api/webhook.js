@@ -32,6 +32,7 @@ export default async function handler(req, res) {
       ghl_contact_id:     metadata.contact_id   || null,
       duration_seconds:   Math.round(msg.durationSeconds || 0),
       ended_reason:       msg.endedReason        || null,
+      answered_by:        msg.call?.answeredBy   || null,
       outcome:            data.outcome           || null,
       quality:            data.quality           || null,
       customer_sentiment: data.customer_sentiment || null,

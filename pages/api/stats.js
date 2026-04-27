@@ -71,7 +71,21 @@ export default async function handler(req, res) {
     .sort((a, b) => b[1] - a[1]).slice(0, 5)
     .map(([name, count]) => ({ name, count }))
 
-  const contacted = rows.filter(r => r.answered_by === 'human').length
+  // A call was contacted if:
+  // - answered_by is 'human' (new calls), OR
+  // - answered_by is null but outcome indicates a real conversation happened (old calls)
+  const contactedOutcomes = new Set(['transferred','not_interested','callback_requested','dnc','wrong_number','busy'])
+  const noContactEndedReasons = new Set(['customer-did-not-answer','voicemail','no-answer'])
+  const contacted = rows.filter(r => {
+    if (r.answered_by === 'human') return true
+    if (r.answered_by && r.answered_by !== 'human') return false
+    // Fallback for old records: use outcome or ended_reason
+    const outcome = (r.outcome || '').toLowerCase()
+    const reason  = (r.ended_reason || '').toLowerCase()
+    if (noContactEndedReasons.has(reason)) return false
+    if (contactedOutcomes.has(outcome)) return true
+    return false
+  }).length
   res.status(200).json({
     total, todayCount, weekCount, transfers,
     transferRate: total > 0 ? transfers / total : 0,

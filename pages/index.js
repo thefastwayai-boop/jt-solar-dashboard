@@ -121,12 +121,12 @@ export default function Dashboard() {
   return (
     <>
       <Head>
-        <title>JT Solar — AI Dialer Dashboard</title>
+        <title>JT Solar — James AI Dialer Dashboard</title>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
 
       <div className="header">
-        <h1>☀️ JT Solar — <span>Tiffany</span> AI Dialer</h1>
+        <h1>☀️ JT Solar — <span>James</span> AI Dialer</h1>
         <div className="header-right">
           <span className="live-badge">● LIVE</span>
           <span className="last-updated">{lastUpdated ? `Updated ${lastUpdated.toLocaleTimeString()}` : 'Loading…'}</span>
@@ -233,7 +233,7 @@ export default function Dashboard() {
               <div className="card" style={{ marginBottom: 24 }}>
                 <div className="section-title">🧠 Objection Intelligence</div>
                 <p style={{ fontSize: 13, color: '#666', marginBottom: 20 }}>
-                  Based on real calls. Each objection includes what Tiffany currently does and a specific recommendation to improve the bot.
+                  Based on real calls. Each objection includes what James currently does and a specific recommendation to improve the bot.
                 </p>
                 <div className="objection-grid">
                   {objectionSummary.map(([objection, { count, intel }]) => (
@@ -257,7 +257,7 @@ export default function Dashboard() {
                         <div className="objection-section">
                           <div className="objection-section-label">💡 Recommendation</div>
                           <div className="objection-text recommendation">
-                            This objection is not explicitly handled in the current script. Consider adding a specific branch for "{objection}" so Tiffany has a tailored response rather than falling through to a generic handler.
+                            This objection is not explicitly handled in the current script. Consider adding a specific branch for "{objection}" so James has a tailored response rather than falling through to a generic handler.
                           </div>
                         </div>
                       )}

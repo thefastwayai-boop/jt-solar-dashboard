@@ -230,12 +230,38 @@ export default function Dashboard() {
                 {callFilter && <button className="clear-filter-btn" onClick={() => setCallFilter(null)}>✕ Clear filter</button>}
               </div>
               {(() => {
-                const pickedUpReasons = new Set(['customer-ended-call','assistant-forwarded-call','assistant-ended-call'])
-                const filtered = callFilter === 'picked_up'  ? calls.filter(c => pickedUpReasons.has(c.ended_reason)) :
+                const filtered = callFilter === 'picked_up'  ? calls.filter(c => c.outcome === 'transferred' || c.outcome === 'not_interested') :
                                  callFilter === 'transferred' ? calls.filter(c => c.outcome === 'transferred') :
                                  callFilter === 'dnc'         ? calls.filter(c => c.outcome === 'dnc') :
                                  calls
+
+                const pickedUpTransfers    = filtered.filter(c => c.outcome === 'transferred').length
+                const pickedUpNotInterested = filtered.filter(c => c.outcome === 'not_interested').length
+                const total                = filtered.length
+
                 return filtered.length === 0 ? <div className="empty">No calls match this filter.</div> : (
+                <>
+                {callFilter === 'picked_up' && total > 0 && (
+                  <div className="filter-stats-bar">
+                    <div className="filter-stat">
+                      <div className="filter-stat-value" style={{color:'#28a745'}}>{pickedUpTransfers}</div>
+                      <div className="filter-stat-label">Transferred</div>
+                      <div className="filter-stat-pct" style={{color:'#28a745'}}>{pct(pickedUpTransfers, total)}</div>
+                    </div>
+                    <div className="filter-stat-divider" />
+                    <div className="filter-stat">
+                      <div className="filter-stat-value" style={{color:'#f4a300'}}>{pickedUpNotInterested}</div>
+                      <div className="filter-stat-label">Not Interested</div>
+                      <div className="filter-stat-pct" style={{color:'#f4a300'}}>{pct(pickedUpNotInterested, total)}</div>
+                    </div>
+                    <div className="filter-stat-divider" />
+                    <div className="filter-stat">
+                      <div className="filter-stat-value" style={{color:'#fff'}}>{total}</div>
+                      <div className="filter-stat-label">Total Engaged</div>
+                      <div className="filter-stat-pct" style={{color:'#666'}}>100%</div>
+                    </div>
+                  </div>
+                )}
                 <div className="table-wrap">
                   <table>
                     <thead><tr><th>Date / Time</th><th>Name</th><th>Phone</th><th>Outcome</th><th>Quality</th><th>Duration</th><th>Objections</th><th>Summary</th><th>Recording</th></tr></thead>
@@ -263,7 +289,7 @@ export default function Dashboard() {
                     </tbody>
                   </table>
                 </div>
-              )})()}
+              </>)})()}
             </div>
           </>
         )}
@@ -405,6 +431,12 @@ export default function Dashboard() {
         .kpi-active { border-color:#f4a300 !important; box-shadow:0 0 0 2px #f4a30033; }
         .clear-filter-btn { background:#2a2a4a; border:1px solid #3a3a6a; color:#f4a300; padding:5px 12px; border-radius:6px; cursor:pointer; font-size:12px; font-weight:700; }
         .clear-filter-btn:hover { background:#f4a300; color:#000; border-color:#f4a300; }
+        .filter-stats-bar { display:flex; align-items:center; gap:0; background:#0f0f1a; border:1px solid #2a2a4a; border-radius:10px; padding:16px 24px; margin-bottom:16px; }
+        .filter-stat { flex:1; text-align:center; }
+        .filter-stat-value { font-size:32px; font-weight:800; line-height:1; }
+        .filter-stat-label { font-size:11px; color:#888; font-weight:600; letter-spacing:.8px; text-transform:uppercase; margin:4px 0; }
+        .filter-stat-pct { font-size:18px; font-weight:700; }
+        .filter-stat-divider { width:1px; height:60px; background:#2a2a4a; flex-shrink:0; }
         .kpi-label { font-size:11px; font-weight:600; color:#888; letter-spacing:.8px; text-transform:uppercase; margin-bottom:10px; }
         .kpi-value { font-size:34px; font-weight:800; color:#fff; line-height:1; }
         .kpi-sub   { font-size:12px; color:#666; margin-top:6px; }

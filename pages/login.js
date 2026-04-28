@@ -4,10 +4,11 @@ import Head from 'next/head'
 
 export default function Login() {
   const router = useRouter()
-  const [email, setEmail]       = useState('')
-  const [password, setPassword] = useState('')
-  const [error, setError]       = useState('')
-  const [loading, setLoading]   = useState(false)
+  const [email, setEmail]         = useState('')
+  const [password, setPassword]   = useState('')
+  const [showPass, setShowPass]   = useState(false)
+  const [error, setError]         = useState('')
+  const [loading, setLoading]     = useState(false)
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -54,13 +55,18 @@ export default function Login() {
             </div>
             <div className="field">
               <label>Password</label>
-              <input
-                type="password"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                placeholder="••••••••"
-                required
-              />
+              <div className="pass-wrap">
+                <input
+                  type={showPass ? 'text' : 'password'}
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  required
+                />
+                <button type="button" className="show-btn" onClick={() => setShowPass(!showPass)}>
+                  {showPass ? '🙈' : '👁️'}
+                </button>
+              </div>
             </div>
             {error && <div className="error">{error}</div>}
             <button type="submit" disabled={loading}>
@@ -86,6 +92,10 @@ export default function Login() {
         input { width:100%; background:#0f0f1a; border:1px solid #2a2a4a; border-radius:8px; color:#fff; font-size:14px; padding:12px 14px; outline:none; transition:border-color .2s; }
         input:focus { border-color:#f4a300; }
         input::placeholder { color:#444; }
+        .pass-wrap { position:relative; }
+        .pass-wrap input { padding-right:44px; }
+        .show-btn { position:absolute; right:10px; top:50%; transform:translateY(-50%); background:none; border:none; cursor:pointer; font-size:16px; padding:4px; width:auto; margin:0; color:#888; }
+        .show-btn:hover { background:none; color:#fff; }
         .error { background:#2a0d0d; border:1px solid #dc3545; color:#dc3545; font-size:13px; padding:10px 14px; border-radius:8px; margin-bottom:16px; }
         button { width:100%; background:#f4a300; border:none; border-radius:8px; color:#000; font-size:15px; font-weight:800; padding:14px; cursor:pointer; transition:background .2s; margin-top:8px; }
         button:hover { background:#e09500; }

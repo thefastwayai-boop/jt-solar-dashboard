@@ -45,6 +45,7 @@ export default function Dashboard() {
   const [lastUpdated, setLastUpdated] = useState(null)
   const [playingId, setPlayingId]       = useState(null)
   const [callFilter, setCallFilter]     = useState(null)
+  const [searchQuery, setSearchQuery]   = useState('')
   const [activeSummary, setActiveSummary] = useState(null)
 
   const loadJames = useCallback(async (p) => {
@@ -222,20 +223,35 @@ export default function Dashboard() {
             )}
 
             <div className="card">
-              <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:14}}>
+              <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:14,gap:12,flexWrap:'wrap'}}>
                 <div className="section-title" style={{marginBottom:0}}>
                   {callFilter === 'picked_up'   ? '📞 People Who Picked Up' :
                    callFilter === 'transferred'  ? '✅ Transferred Calls' :
                    callFilter === 'dnc'          ? '🚫 DNC Calls' :
                    'Recent Calls'}
                 </div>
-                {callFilter && <button className="clear-filter-btn" onClick={() => setCallFilter(null)}>✕ Clear filter</button>}
+                <div style={{display:'flex',gap:8,alignItems:'center',marginLeft:'auto'}}>
+                  <input
+                    className="search-input"
+                    type="text"
+                    placeholder="🔍 Search name or number…"
+                    value={searchQuery}
+                    onChange={e => setSearchQuery(e.target.value)}
+                  />
+                  {searchQuery && <button className="clear-filter-btn" onClick={() => setSearchQuery('')}>✕</button>}
+                  {callFilter && <button className="clear-filter-btn" onClick={() => setCallFilter(null)}>✕ Clear filter</button>}
+                </div>
               </div>
               {(() => {
-                const filtered = callFilter === 'picked_up'  ? calls.filter(c => c.outcome === 'transferred' || c.outcome === 'not_interested') :
-                                 callFilter === 'transferred' ? calls.filter(c => c.outcome === 'transferred') :
-                                 callFilter === 'dnc'         ? calls.filter(c => c.outcome === 'dnc') :
-                                 calls
+                const q = searchQuery.toLowerCase().trim()
+                const filtered = (callFilter === 'picked_up'  ? calls.filter(c => c.outcome === 'transferred' || c.outcome === 'not_interested') :
+                                  callFilter === 'transferred' ? calls.filter(c => c.outcome === 'transferred') :
+                                  callFilter === 'dnc'         ? calls.filter(c => c.outcome === 'dnc') :
+                                  calls
+                ).filter(c => !q ||
+                  (c.contact_name || '').toLowerCase().includes(q) ||
+                  (c.phone || '').toLowerCase().includes(q)
+                )
 
                 const pickedUpTransfers    = filtered.filter(c => c.outcome === 'transferred').length
                 const pickedUpNotInterested = filtered.filter(c => c.outcome === 'not_interested').length
@@ -278,7 +294,12 @@ export default function Dashboard() {
                             <td>{['customer-ended-call','assistant-forwarded-call','assistant-ended-call'].includes(c.ended_reason) ? qualityBadge(c.quality) : null}</td>
                             <td>{c.duration_seconds?fmtSec(c.duration_seconds):'—'}</td>
                             <td style={{fontSize:12,color:'#999'}}>{c.objections||'—'}</td>
-                            <td>{c.summary ? <div className="summary-text" onClick={() => setActiveSummary(c)}>{c.summary}</div> : '—'}</td>
+                            <td>{c.summary ? (
+                              <div className="summary-wrap">
+                                <div className="summary-text" onClick={() => setActiveSummary(c)}>{c.summary}</div>
+                                <div className="summary-tooltip">{c.summary}</div>
+                              </div>
+                            ) : '—'}</td>
                             <td>{c.recording_url ? <button className="play-btn" onClick={()=>setPlayingId(playingId===c.id?null:c.id)}>{playingId===c.id?'■ Stop':'▶ Play'}</button> : '—'}</td>
                           </tr>
                           {playingId===c.id && c.recording_url && (
@@ -544,7 +565,13 @@ export default function Dashboard() {
         .badge-blue{background:#0a1a2e;color:#0d6efd;border:1px solid #0d6efd}
         .badge-gray{background:#1a1a1a;color:#888;border:1px solid #444}
 
-        .summary-text { max-width:260px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-size:12px; color:#999; }
+        .search-input { background:#0f0f1a; border:1px solid #2a2a4a; border-radius:8px; color:#fff; font-size:13px; padding:7px 14px; outline:none; width:240px; transition:border-color .2s; }
+        .search-input:focus { border-color:#f4a300; }
+        .search-input::placeholder { color:#555; }
+        .summary-wrap { position:relative; max-width:260px; }
+        .summary-text { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-size:12px; color:#999; cursor:pointer; }
+        .summary-tooltip { display:none; position:absolute; bottom:calc(100% + 8px); left:0; background:#1a1a2e; border:1px solid #3a3a6a; border-radius:8px; padding:10px 14px; font-size:12px; color:#ccc; line-height:1.6; width:320px; z-index:100; box-shadow:0 4px 20px rgba(0,0,0,.5); white-space:normal; }
+        .summary-wrap:hover .summary-tooltip { display:block; }
         .empty { color:#555; font-size:13px; padding:24px 0; text-align:center; }
         .loading { text-align:center; padding:80px; color:#666; }
         .spinner { width:40px; height:40px; border:3px solid #2a2a4a; border-top-color:#f4a300; border-radius:50%; animation:spin .8s linear infinite; margin:0 auto 16px; }

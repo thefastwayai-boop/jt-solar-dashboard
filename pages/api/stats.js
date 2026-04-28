@@ -81,6 +81,7 @@ export default async function handler(req, res) {
     .sort((a, b) => b[1] - a[1]).slice(0, 5)
     .map(([name, count]) => ({ name, count }))
 
+  // silence-timed-out = Apple call screening with no response = no answer
   const contactedReasons = new Set(['customer-ended-call', 'assistant-forwarded-call', 'assistant-ended-call'])
   const contacted = rows.filter(r => contactedReasons.has((r.ended_reason || '').toLowerCase())).length
 

@@ -43,8 +43,9 @@ export default function Dashboard() {
   const [loading, setLoading]   = useState(true)
   const [repLoading, setRepLoading] = useState(false)
   const [lastUpdated, setLastUpdated] = useState(null)
-  const [playingId, setPlayingId]     = useState(null)
-  const [callFilter, setCallFilter]   = useState(null)
+  const [playingId, setPlayingId]       = useState(null)
+  const [callFilter, setCallFilter]     = useState(null)
+  const [activeSummary, setActiveSummary] = useState(null)
 
   const loadJames = useCallback(async (p) => {
     const activePeriod = p || period
@@ -122,6 +123,7 @@ export default function Dashboard() {
           <span className="live-badge">● LIVE</span>
           <span className="last-updated">{lastUpdated ? `Updated ${lastUpdated.toLocaleTimeString()}` : 'Loading…'}</span>
           <button className="refresh-btn" onClick={tab === 'james' ? () => loadJames(period) : () => { setRepData(null); loadReps() }}>↻ Refresh</button>
+          <button className="refresh-btn" style={{color:'#dc3545',borderColor:'#dc3545'}} onClick={async () => { await fetch('/api/auth/logout', {method:'POST'}); window.location.href='/login' }}>Sign Out</button>
         </div>
       </div>
 
@@ -276,7 +278,7 @@ export default function Dashboard() {
                             <td>{['customer-ended-call','assistant-forwarded-call','assistant-ended-call'].includes(c.ended_reason) ? qualityBadge(c.quality) : null}</td>
                             <td>{c.duration_seconds?fmtSec(c.duration_seconds):'—'}</td>
                             <td style={{fontSize:12,color:'#999'}}>{c.objections||'—'}</td>
-                            <td><div className="summary-text" title={c.summary}>{c.summary||'—'}</div></td>
+                            <td>{c.summary ? <div className="summary-text" onClick={() => setActiveSummary(c)}>{c.summary}</div> : '—'}</td>
                             <td>{c.recording_url ? <button className="play-btn" onClick={()=>setPlayingId(playingId===c.id?null:c.id)}>{playingId===c.id?'■ Stop':'▶ Play'}</button> : '—'}</td>
                           </tr>
                           {playingId===c.id && c.recording_url && (
@@ -399,6 +401,40 @@ export default function Dashboard() {
           </>
         )}
       </div>
+
+      {/* Summary Modal */}
+      {activeSummary && (
+        <div className="modal-overlay" onClick={() => setActiveSummary(null)}>
+          <div className="modal-box" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <div>
+                <div className="modal-name">{activeSummary.contact_name || 'Unknown'}</div>
+                <div className="modal-meta">{new Date(activeSummary.created_at).toLocaleString()} · {activeSummary.phone}</div>
+              </div>
+              <button className="modal-close" onClick={() => setActiveSummary(null)}>✕</button>
+            </div>
+            <div className="modal-badges">
+              {outcomeBadge(activeSummary.outcome)}
+              {qualityBadge(activeSummary.quality)}
+              {activeSummary.duration_seconds ? <span className="badge badge-gray">{fmtSec(activeSummary.duration_seconds)}</span> : null}
+            </div>
+            <div className="modal-section-label">Call Summary</div>
+            <div className="modal-summary">{activeSummary.summary}</div>
+            {activeSummary.objections && (
+              <>
+                <div className="modal-section-label" style={{marginTop:16}}>Objections Raised</div>
+                <div className="modal-summary" style={{color:'#f4a300'}}>{activeSummary.objections}</div>
+              </>
+            )}
+            {activeSummary.recording_url && (
+              <>
+                <div className="modal-section-label" style={{marginTop:16}}>Recording</div>
+                <audio controls src={activeSummary.recording_url} style={{width:'100%',marginTop:8,filter:'invert(0.85) hue-rotate(180deg)'}} />
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
       <style jsx global>{`
         * { margin:0; padding:0; box-sizing:border-box; }

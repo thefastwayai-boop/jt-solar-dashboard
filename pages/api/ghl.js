@@ -15,12 +15,11 @@ const REP_PIPELINES = [
 
 const LEAD_HUB_ID = 'YPi3C8gsJXjTkQrUqctW'
 
-async function fetchAllOpps(pipelineId, fromDate) {
+async function fetchAllOpps(pipelineId) {
   let all = []
   let page = 1
   while (true) {
-    let url = `https://services.leadconnectorhq.com/opportunities/search?location_id=${LOCATION_ID}&pipeline_id=${pipelineId}&limit=100&page=${page}`
-    if (fromDate) url += `&startDate=${fromDate.toISOString()}`
+    const url = `https://services.leadconnectorhq.com/opportunities/search?location_id=${LOCATION_ID}&pipeline_id=${pipelineId}&limit=100&page=${page}`
     const res = await fetch(url, { headers: { 'Authorization': `Bearer ${GHL_KEY}`, 'Version': '2021-07-28' } })
     const data = await res.json()
     const opps = data.opportunities || []
@@ -30,6 +29,14 @@ async function fetchAllOpps(pipelineId, fromDate) {
     page++
   }
   return all
+}
+
+function filterByPeriod(opps, fromDate) {
+  if (!fromDate) return opps
+  return opps.filter(o => {
+    const d = new Date(o.createdAt || o.updatedAt || 0)
+    return d >= fromDate
+  })
 }
 
 export default async function handler(req, res) {
@@ -43,15 +50,18 @@ export default async function handler(req, res) {
   if (period === '1m') { fromDate = new Date(today); fromDate.setDate(today.getDate() - 30) }
 
   try {
-    const [leadHubOpps, ...repOppsArrays] = await Promise.all([
-      fetchAllOpps(LEAD_HUB_ID, fromDate),
-      ...REP_PIPELINES.map(p => fetchAllOpps(p.id, fromDate))
+    const [leadHubRaw, ...repOppsRaw] = await Promise.all([
+      fetchAllOpps(LEAD_HUB_ID),
+      ...REP_PIPELINES.map(p => fetchAllOpps(p.id))
     ])
+
+    const leadHubOpps  = filterByPeriod(leadHubRaw, fromDate)
+    const repOppsArrays = repOppsRaw.map(opps => filterByPeriod(opps, fromDate))
 
     // Lead Hub stats
     const leadHub = {
-      total:       leadHubOpps.length,
-      aiActive:    leadHubOpps.filter(o => o.status === 'open').length,
+      total:    leadHubOpps.length,
+      aiActive: leadHubOpps.filter(o => o.status === 'open').length,
     }
 
     // Rep stats

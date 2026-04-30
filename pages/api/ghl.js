@@ -1,4 +1,3 @@
-
 const GHL_KEY     = 'pit-703f91cc-dcdd-4fb4-a6a9-8a2950234dbb'
 const LOCATION_ID = 'wNOUTDaV8CtZTLNfuhSL'
 
@@ -16,14 +15,13 @@ const REP_PIPELINES = [
 
 const LEAD_HUB_ID = 'YPi3C8gsJXjTkQrUqctW'
 
-async function fetchAllOpps(pipelineId) {
+async function fetchAllOpps(pipelineId, fromDate) {
   let all = []
   let page = 1
   while (true) {
-    const res = await fetch(
-      `https://services.leadconnectorhq.com/opportunities/search?location_id=${LOCATION_ID}&pipeline_id=${pipelineId}&limit=100&page=${page}`,
-      { headers: { 'Authorization': `Bearer ${GHL_KEY}`, 'Version': '2021-07-28' } }
-    )
+    let url = `https://services.leadconnectorhq.com/opportunities/search?location_id=${LOCATION_ID}&pipeline_id=${pipelineId}&limit=100&page=${page}`
+    if (fromDate) url += `&startDate=${fromDate.toISOString()}`
+    const res = await fetch(url, { headers: { 'Authorization': `Bearer ${GHL_KEY}`, 'Version': '2021-07-28' } })
     const data = await res.json()
     const opps = data.opportunities || []
     all = all.concat(opps)
@@ -35,11 +33,19 @@ async function fetchAllOpps(pipelineId) {
 }
 
 export default async function handler(req, res) {
+  const period = req.query.period || 'all'
+  const now    = new Date()
+  const today  = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+
+  let fromDate = null
+  if (period === '1d') fromDate = today
+  if (period === '7d') { fromDate = new Date(today); fromDate.setDate(today.getDate() - 6) }
+  if (period === '1m') { fromDate = new Date(today); fromDate.setDate(today.getDate() - 30) }
+
   try {
-    // Fetch all pipelines in parallel
     const [leadHubOpps, ...repOppsArrays] = await Promise.all([
-      fetchAllOpps(LEAD_HUB_ID),
-      ...REP_PIPELINES.map(p => fetchAllOpps(p.id))
+      fetchAllOpps(LEAD_HUB_ID, fromDate),
+      ...REP_PIPELINES.map(p => fetchAllOpps(p.id, fromDate))
     ])
 
     // Lead Hub stats

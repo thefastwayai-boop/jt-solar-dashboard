@@ -63,17 +63,21 @@ export default function Dashboard() {
   }, [period])
 
   const loadReps = useCallback(async () => {
-    if (repData) return
     setRepLoading(true)
     try {
-      const res = await fetch('/api/reps')
+      const res = await fetch('/api/ghl')
       setRepData(await res.json())
     } catch (e) { console.error(e) }
     finally { setRepLoading(false) }
-  }, [repData])
+  }, [])
 
   useEffect(() => { loadJames(period); const t = setInterval(() => loadJames(period), 60000); return () => clearInterval(t) }, [period])
-  useEffect(() => { if (tab === 'reps') loadReps() }, [tab, loadReps])
+  useEffect(() => {
+    if (tab !== 'reps') return
+    loadReps()
+    const t = setInterval(loadReps, 60000)
+    return () => clearInterval(t)
+  }, [tab])
 
   const pct    = (n, d) => d > 0 ? (n / d * 100).toFixed(1) + '%' : '0%'
   const fmtSec = s => s >= 60 ? `${Math.floor(s/60)}m ${s%60}s` : `${s}s`
@@ -319,105 +323,92 @@ export default function Dashboard() {
 
         {/* ── REPS TAB ── */}
         {tab === 'reps' && (
-          repLoading ? <div className="loading"><div className="spinner" /><p>Loading rep data…</p></div> :
+          repLoading ? <div className="loading"><div className="spinner" /><p>Loading from GoHighLevel…</p></div> :
           !repData   ? <div className="loading"><p>No data yet.</p></div> : <>
 
-            {/* Rep KPI cards */}
-            <div style={{display:'grid',gridTemplateColumns:`repeat(${repData.repStats.length},1fr)`,gap:16,marginBottom:24}}>
-              {repData.repStats.map((rep, i) => (
-                <div key={rep.rep} className="rep-hero-card" style={{'--rep-color': REP_COLORS[i]}}>
-                  <div className="rep-hero-name">{rep.rep}</div>
-                  <div className="rep-hero-grid">
-                    {[
-                      ['Leads',        rep.leads.toLocaleString()],
-                      ['Contacts',     rep.contacts.toLocaleString()],
-                      ['Contact Rate', pct(rep.contacts, rep.leads)],
-                      ['Sign-ups',     rep.signups.toLocaleString()],
-                      ['Sign-up Rate', pct(rep.signups, rep.contacts)],
-                      ['Docs Acq.',    rep.docsAcq.toLocaleString()],
-                      ['Follow-Ups',   rep.followUps.toLocaleString()],
-                      ['Total kWh',    fmtKwh(rep.totalKwh)],
-                    ].map(([label, value]) => (
-                      <div key={label} className="rep-stat">
-                        <div className="rep-stat-label">{label}</div>
-                        <div className="rep-stat-value">{value}</div>
-                      </div>
-                    ))}
-                  </div>
+            {/* Lead Hub Banner */}
+            {repData.leadHub && (
+              <div className="lead-hub-banner">
+                <div className="lead-hub-item">
+                  <div className="lead-hub-val">{repData.leadHub.total}</div>
+                  <div className="lead-hub-label">Total Leads in Lead Hub</div>
                 </div>
-              ))}
+                <div className="lead-hub-item">
+                  <div className="lead-hub-val" style={{color:'#28a745'}}>{repData.leadHub.aiActive}</div>
+                  <div className="lead-hub-label">Active (AI Dialing)</div>
+                </div>
+                <div className="lead-hub-item">
+                  <div className="lead-hub-val" style={{color:'#888'}}>{repData.leadHub.total - repData.leadHub.aiActive}</div>
+                  <div className="lead-hub-label">Closed / Inactive</div>
+                </div>
+              </div>
+            )}
+
+            {/* Leaderboard */}
+            <div className="card" style={{marginBottom:24}}>
+              <div className="section-title">🏆 Leaderboard — Ranked by Signed Up</div>
+              <div className="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>Rep</th>
+                      <th>Total Leads</th>
+                      <th>Follow Up</th>
+                      <th>Docs Acquired</th>
+                      <th>Signed Up</th>
+                      <th>Payable</th>
+                      <th>Bad Timing</th>
+                      <th>Not Interested</th>
+                      <th>DQ</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {repData.repStats.map((rep, i) => (
+                      <tr key={rep.rep}>
+                        <td style={{fontWeight:800,color:i===0?'#f4a300':i===1?'#aaa':i===2?'#cd7f32':'#666',fontSize:16}}>{i+1}</td>
+                        <td style={{fontWeight:700,color:REP_COLORS[i % REP_COLORS.length],fontSize:14}}>{rep.rep}</td>
+                        <td>{rep.total.toLocaleString()}</td>
+                        <td style={{color:'#0d6efd',fontWeight:600}}>{rep.followUp}</td>
+                        <td style={{color:'#20c997',fontWeight:600}}>{rep.docsAcq}</td>
+                        <td style={{color:'#28a745',fontWeight:800,fontSize:15}}>{rep.signedUp}</td>
+                        <td style={{color:'#f4a300',fontWeight:600}}>{rep.payable || '—'}</td>
+                        <td style={{color:'#888'}}>{rep.badTiming}</td>
+                        <td style={{color:'#dc3545'}}>{rep.notInterested}</td>
+                        <td style={{color:'#666'}}>{rep.dq}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
 
             {/* Head to head bars */}
             <div className="card" style={{marginBottom:24}}>
               <div className="section-title">Head to Head</div>
               {[
-                ['Leads',       repData.repStats.map(r => r.leads)],
-                ['Contacts',    repData.repStats.map(r => r.contacts)],
-                ['Sign-ups',    repData.repStats.map(r => r.signups)],
-                ['Docs Acq.',   repData.repStats.map(r => r.docsAcq)],
-                ['Total kWh',   repData.repStats.map(r => r.totalKwh)],
-              ].map(([label, values]) => {
+                ['Signed Up',     repData.repStats.map(r => r.signedUp),      '#28a745'],
+                ['Docs Acquired', repData.repStats.map(r => r.docsAcq),       '#20c997'],
+                ['Follow Up',     repData.repStats.map(r => r.followUp),      '#0d6efd'],
+                ['Bad Timing',    repData.repStats.map(r => r.badTiming),     '#888'],
+                ['Not Interested',repData.repStats.map(r => r.notInterested), '#dc3545'],
+              ].map(([label, values, color]) => {
                 const max = Math.max(...values, 1)
                 return (
                   <div key={label} style={{marginBottom:16}}>
                     <div style={{fontSize:11,fontWeight:700,color:'#666',letterSpacing:'.8px',textTransform:'uppercase',marginBottom:6}}>{label}</div>
                     {repData.repStats.map((rep, i) => (
-                      <div key={rep.rep} style={{display:'flex',alignItems:'center',gap:10,marginBottom:6}}>
-                        <div style={{width:70,fontSize:12,color:'#ccc',flexShrink:0}}>{rep.rep}</div>
+                      <div key={rep.rep} style={{display:'flex',alignItems:'center',gap:10,marginBottom:5}}>
+                        <div style={{width:70,fontSize:12,color:REP_COLORS[i % REP_COLORS.length],fontWeight:700,flexShrink:0}}>{rep.rep}</div>
                         <div style={{flex:1,background:'#0f0f1a',borderRadius:4,height:10,overflow:'hidden'}}>
-                          <div style={{height:'100%',borderRadius:4,background:REP_COLORS[i],width:`${values[i]/max*100}%`,transition:'width .6s ease'}} />
+                          <div style={{height:'100%',borderRadius:4,background:color,width:`${values[i]/max*100}%`,transition:'width .6s ease'}} />
                         </div>
-                        <div style={{width:60,fontSize:13,fontWeight:700,color:'#fff',textAlign:'right'}}>
-                          {label === 'Total kWh' ? fmtKwh(values[i]) : values[i].toLocaleString()}
-                        </div>
+                        <div style={{width:40,fontSize:13,fontWeight:700,color:'#fff',textAlign:'right'}}>{values[i]}</div>
                       </div>
                     ))}
                   </div>
                 )
               })}
-            </div>
-
-            {/* Weekly breakdown table */}
-            <div className="card">
-              <div className="section-title">Weekly Breakdown</div>
-              <div className="table-wrap">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Week</th>
-                      <th>Rep</th>
-                      <th>Leads</th>
-                      <th>Contacts</th>
-                      <th>Contact Rate</th>
-                      <th>Sign-ups</th>
-                      <th>Sign-up Rate</th>
-                      <th>Docs Acq.</th>
-                      <th>Follow-Ups</th>
-                      <th>kWh</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {repData.records.map((row, i) => {
-                      const repIdx = repData.repStats.findIndex(r => r.rep === row.rep)
-                      return (
-                        <tr key={i}>
-                          <td style={{fontWeight:600,color:'#f4a300'}}>{row.week}</td>
-                          <td style={{fontWeight:700,color:REP_COLORS[repIdx]||'#fff'}}>{row.rep}</td>
-                          <td>{row.leads.toLocaleString()}</td>
-                          <td>{row.contacts.toLocaleString()}</td>
-                          <td>{row.leads > 0 ? pct(row.contacts, row.leads) : '—'}</td>
-                          <td>{row.signups.toLocaleString()}</td>
-                          <td>{row.contacts > 0 ? pct(row.signups, row.contacts) : '—'}</td>
-                          <td>{row.docsAcq.toLocaleString()}</td>
-                          <td>{row.followUps.toLocaleString()}</td>
-                          <td style={{fontWeight:700,color:'#20c997'}}>{fmtKwh(row.signupKwh + row.docsKwh)}</td>
-                        </tr>
-                      )
-                    })}
-                  </tbody>
-                </table>
-              </div>
             </div>
           </>
         )}
@@ -536,6 +527,10 @@ export default function Dashboard() {
         .objection-text.recommendation { background:#0d2010; color:#b8f0c8; border-left:3px solid #28a745; }
 
         /* Rep cards */
+        .lead-hub-banner { display:flex; gap:0; background:#1a1a2e; border:1px solid #2a2a4a; border-radius:12px; padding:20px 32px; margin-bottom:24px; }
+        .lead-hub-item { flex:1; text-align:center; }
+        .lead-hub-val { font-size:36px; font-weight:800; color:#fff; }
+        .lead-hub-label { font-size:11px; font-weight:700; color:#666; letter-spacing:.8px; text-transform:uppercase; margin-top:4px; }
         .rep-hero-card { background:#1a1a2e; border:2px solid var(--rep-color); border-radius:14px; padding:24px; }
         .rep-hero-name { font-size:22px; font-weight:800; color:var(--rep-color); margin-bottom:18px; }
         .rep-hero-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }

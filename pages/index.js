@@ -62,22 +62,25 @@ export default function Dashboard() {
     finally { setLoading(false) }
   }, [period])
 
-  const loadReps = useCallback(async () => {
+  const [repPeriod, setRepPeriod] = useState('all')
+
+  const loadReps = useCallback(async (p) => {
+    const period = p || repPeriod
     setRepLoading(true)
     try {
-      const res = await fetch('/api/ghl')
+      const res = await fetch(`/api/ghl?period=${period}`)
       setRepData(await res.json())
     } catch (e) { console.error(e) }
     finally { setRepLoading(false) }
-  }, [])
+  }, [repPeriod])
 
   useEffect(() => { loadJames(period); const t = setInterval(() => loadJames(period), 60000); return () => clearInterval(t) }, [period])
   useEffect(() => {
     if (tab !== 'reps') return
-    loadReps()
-    const t = setInterval(loadReps, 60000)
+    loadReps(repPeriod)
+    const t = setInterval(() => loadReps(repPeriod), 60000)
     return () => clearInterval(t)
-  }, [tab])
+  }, [tab, repPeriod])
 
   const pct    = (n, d) => d > 0 ? (n / d * 100).toFixed(1) + '%' : '0%'
   const fmtSec = s => s >= 60 ? `${Math.floor(s/60)}m ${s%60}s` : `${s}s`
@@ -125,9 +128,17 @@ export default function Dashboard() {
               <option value="all">All Time</option>
             </select>
           )}
+          {tab === 'reps' && (
+            <select className="period-select" value={repPeriod} onChange={e => { setRepPeriod(e.target.value); setRepLoading(true) }}>
+              <option value="1d">Today</option>
+              <option value="7d">Last 7 Days</option>
+              <option value="1m">Last 30 Days</option>
+              <option value="all">All Time</option>
+            </select>
+          )}
           <span className="live-badge">● LIVE</span>
           <span className="last-updated">{lastUpdated ? `Updated ${lastUpdated.toLocaleTimeString()}` : 'Loading…'}</span>
-          <button className="refresh-btn" onClick={tab === 'james' ? () => loadJames(period) : () => { setRepData(null); loadReps() }}>↻ Refresh</button>
+          <button className="refresh-btn" onClick={tab === 'james' ? () => loadJames(period) : () => { setRepData(null); loadReps(repPeriod) }}>↻ Refresh</button>
           <button className="refresh-btn" style={{color:'#dc3545',borderColor:'#dc3545'}} onClick={async () => { await fetch('/api/auth/logout', {method:'POST'}); window.location.href='/login' }}>Sign Out</button>
         </div>
       </div>
